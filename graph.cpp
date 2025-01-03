@@ -159,6 +159,85 @@ public:
         }
         cout << endl;
     }
+
+    // Detect cycle in directed graph using DFS
+    bool hasCycleDirectedHelper(int v, set<int> &visited, set<int> &recStack)
+    {
+        if (visited.find(v) == visited.end())
+        {
+            visited.insert(v);
+            recStack.insert(v);
+
+            for (int neighbor : adjList[v])
+            {
+                if (recStack.find(neighbor) != recStack.end() ||
+                    hasCycleDirectedHelper(neighbor, visited, recStack))
+                {
+                    return true;
+                }
+            }
+        }
+
+        recStack.erase(v);
+        return false;
+    }
+
+    bool hasCycleDirected()
+    {
+        set<int> visited;
+        set<int> recStack;
+
+        for (int i = 0; i < numVertices; ++i)
+        {
+            if (hasCycleDirectedHelper(i, visited, recStack))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // Detect cycle in undirected graph using DFS
+    bool hasCycleUndirectedHelper(int v, set<int> &visited, int parent)
+    {
+        visited.insert(v);
+
+        for (int neighbor : adjList[v])
+        {
+            if (visited.find(neighbor) == visited.end())
+            {
+                if (hasCycleUndirectedHelper(neighbor, visited, v))
+                {
+                    return true;
+                }
+            }
+            else if (neighbor != parent)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    bool hasCycleUndirected()
+    {
+        set<int> visited;
+
+        for (int i = 0; i < numVertices; ++i)
+        {
+            if (visited.find(i) == visited.end())
+            {
+                if (hasCycleUndirectedHelper(i, visited, -1))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
 };
 
 int main()
@@ -185,6 +264,10 @@ int main()
 
     // Perform BFS
     g.bfs(0);
+
+    // Check for cycles
+    cout << "Cycle in Directed Graph: " << (g.hasCycleDirected() ? "Yes" : "No") << endl;
+    cout << "Cycle in Undirected Graph: " << (g.hasCycleUndirected() ? "Yes" : "No") << endl;
     system("pause");
     return 0;
 }
