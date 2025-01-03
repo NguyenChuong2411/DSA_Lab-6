@@ -4,13 +4,14 @@
 #include <stack>
 #include <set>
 #include <queue>
+#include <climits>
 using namespace std;
 
 class Graph
 {
 private:
-    unordered_map<int, vector<int>> adjList; // Adjacency List
-    vector<vector<int>> adjMatrix;           // Adjacency Matrix
+    unordered_map<int, vector<pair<int, int>>> adjList; // Adjacency List with weights
+    vector<vector<int>> adjMatrix;                      // Adjacency Matrix
     int numVertices;
 
 public:
@@ -24,13 +25,17 @@ public:
         // Add a new row and column in the adjacency matrix
         for (auto &row : adjMatrix)
         {
-            row.push_back(0);
+            row.push_back(INT_MAX);
         }
-        adjMatrix.push_back(vector<int>(numVertices, 0));
+        adjMatrix.push_back(vector<int>(numVertices, INT_MAX));
+        for (int i = 0; i < numVertices; ++i)
+        {
+            adjMatrix[i][i] = 0; // Distance to itself is zero
+        }
     }
 
-    // Add an edge
-    void addEdge(int u, int v)
+    // Add an edge with weight
+    void addEdge(int u, int v, int weight)
     {
         if (u >= numVertices || v >= numVertices)
         {
@@ -39,12 +44,12 @@ public:
         }
 
         // Update adjacency list
-        adjList[u].push_back(v);
-        adjList[v].push_back(u); // Assuming undirected graph
+        adjList[u].push_back({v, weight});
+        adjList[v].push_back({u, weight}); // Assuming undirected graph
 
         // Update adjacency matrix
-        adjMatrix[u][v] = 1;
-        adjMatrix[v][u] = 1; // Assuming undirected graph
+        adjMatrix[u][v] = weight;
+        adjMatrix[v][u] = weight; // Assuming undirected graph
     }
 
     // Print adjacency list
@@ -56,7 +61,7 @@ public:
             cout << pair.first << ": ";
             for (const auto &neighbor : pair.second)
             {
-                cout << neighbor << " ";
+                cout << "(" << neighbor.first << ", " << neighbor.second << ") ";
             }
             cout << endl;
         }
@@ -70,173 +75,59 @@ public:
         {
             for (const auto &val : row)
             {
-                cout << val << " ";
+                if (val == INT_MAX)
+                {
+                    cout << "INF ";
+                }
+                else
+                {
+                    cout << val << " ";
+                }
             }
             cout << endl;
         }
     }
 
-    // Recursive DFS helper
-    void dfsRecursiveHelper(int v, set<int> &visited)
+    // Perform Dijkstra's algorithm
+    void dijkstra(int start)
     {
-        cout << v << " ";
-        visited.insert(v);
+        vector<int> distances(numVertices, INT_MAX);
+        set<pair<int, int>> minHeap;
 
-        for (int neighbor : adjList[v])
+        distances[start] = 0;
+        minHeap.insert({0, start});
+
+        while (!minHeap.empty())
         {
-            if (visited.find(neighbor) == visited.end())
+            int u = minHeap.begin()->second;
+            minHeap.erase(minHeap.begin());
+
+            for (const auto &neighbor : adjList[u])
             {
-                dfsRecursiveHelper(neighbor, visited);
-            }
-        }
-    }
+                int v = neighbor.first;
+                int weight = neighbor.second;
 
-    // Perform DFS (Recursive)
-    void dfsRecursive(int start)
-    {
-        set<int> visited;
-        cout << "DFS (Recursive): ";
-        dfsRecursiveHelper(start, visited);
-        cout << endl;
-    }
-
-    // Perform DFS (Iterative)
-    void dfsIterative(int start)
-    {
-        set<int> visited;
-        stack<int> s;
-        s.push(start);
-
-        cout << "DFS (Iterative): ";
-        while (!s.empty())
-        {
-            int v = s.top();
-            s.pop();
-
-            if (visited.find(v) == visited.end())
-            {
-                cout << v << " ";
-                visited.insert(v);
-            }
-
-            for (auto it = adjList[v].rbegin(); it != adjList[v].rend(); ++it)
-            {
-                if (visited.find(*it) == visited.end())
+                if (distances[u] + weight < distances[v])
                 {
-                    s.push(*it);
-                }
-            }
-        }
-        cout << endl;
-    }
-
-    // Perform BFS
-    void bfs(int start)
-    {
-        set<int> visited;
-        queue<int> q;
-        vector<int> traversalOrder;
-
-        q.push(start);
-        visited.insert(start);
-
-        cout << "BFS: ";
-        while (!q.empty())
-        {
-            int v = q.front();
-            q.pop();
-            cout << v << " ";
-            traversalOrder.push_back(v);
-
-            for (int neighbor : adjList[v])
-            {
-                if (visited.find(neighbor) == visited.end())
-                {
-                    visited.insert(neighbor);
-                    q.push(neighbor);
-                }
-            }
-        }
-        cout << endl;
-    }
-
-    // Detect cycle in directed graph using DFS
-    bool hasCycleDirectedHelper(int v, set<int> &visited, set<int> &recStack)
-    {
-        if (visited.find(v) == visited.end())
-        {
-            visited.insert(v);
-            recStack.insert(v);
-
-            for (int neighbor : adjList[v])
-            {
-                if (recStack.find(neighbor) != recStack.end() ||
-                    hasCycleDirectedHelper(neighbor, visited, recStack))
-                {
-                    return true;
+                    minHeap.erase({distances[v], v});
+                    distances[v] = distances[u] + weight;
+                    minHeap.insert({distances[v], v});
                 }
             }
         }
 
-        recStack.erase(v);
-        return false;
-    }
-
-    bool hasCycleDirected()
-    {
-        set<int> visited;
-        set<int> recStack;
-
+        cout << "Shortest distances from vertex " << start << ":\n";
         for (int i = 0; i < numVertices; ++i)
         {
-            if (hasCycleDirectedHelper(i, visited, recStack))
+            if (distances[i] == INT_MAX)
             {
-                return true;
+                cout << i << ": INF\n";
+            }
+            else
+            {
+                cout << i << ": " << distances[i] << "\n";
             }
         }
-
-        return false;
-    }
-
-    // Detect cycle in undirected graph using DFS
-    bool hasCycleUndirectedHelper(int v, set<int> &visited, int parent)
-    {
-        visited.insert(v);
-
-        for (int neighbor : adjList[v])
-        {
-            if (visited.find(neighbor) == visited.end())
-            {
-                if (hasCycleUndirectedHelper(neighbor, visited, v))
-                {
-                    return true;
-                }
-            }
-            else if (neighbor != parent)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    bool hasCycleUndirected()
-    {
-        set<int> visited;
-
-        for (int i = 0; i < numVertices; ++i)
-        {
-            if (visited.find(i) == visited.end())
-            {
-                if (hasCycleUndirectedHelper(i, visited, -1))
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
     }
 };
 
@@ -249,25 +140,17 @@ int main()
     g.addVertex();
     g.addVertex();
 
-    // Add edges
-    g.addEdge(0, 1);
-    g.addEdge(1, 2);
-    g.addEdge(0, 2);
+    // Add edges with weights
+    g.addEdge(0, 1, 4);
+    g.addEdge(1, 2, 1);
+    g.addEdge(0, 2, 7);
 
     // Print adjacency list and matrix
     g.printAdjList();
     g.printAdjMatrix();
 
-    // Perform DFS
-    g.dfsRecursive(0);
-    g.dfsIterative(0);
-
-    // Perform BFS
-    g.bfs(0);
-
-    // Check for cycles
-    cout << "Cycle in Directed Graph: " << (g.hasCycleDirected() ? "Yes" : "No") << endl;
-    cout << "Cycle in Undirected Graph: " << (g.hasCycleUndirected() ? "Yes" : "No") << endl;
+    // Perform Dijkstra's algorithm
+    g.dijkstra(0);
     system("pause");
     return 0;
 }
