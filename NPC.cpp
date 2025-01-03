@@ -150,6 +150,6 @@ int main()
     pair<int, int> start = {0, 0};
     pair<int, int> goal = {4, 4};
     gameGrid.aStarPathfinding(start, goal);
-
+    system("pause");
     return 0;
 }
