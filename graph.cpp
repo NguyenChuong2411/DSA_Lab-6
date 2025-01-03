@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <stack>
 #include <set>
+#include <queue>
 using namespace std;
 
 class Graph
@@ -128,6 +129,36 @@ public:
         }
         cout << endl;
     }
+
+    // Perform BFS
+    void bfs(int start)
+    {
+        set<int> visited;
+        queue<int> q;
+        vector<int> traversalOrder;
+
+        q.push(start);
+        visited.insert(start);
+
+        cout << "BFS: ";
+        while (!q.empty())
+        {
+            int v = q.front();
+            q.pop();
+            cout << v << " ";
+            traversalOrder.push_back(v);
+
+            for (int neighbor : adjList[v])
+            {
+                if (visited.find(neighbor) == visited.end())
+                {
+                    visited.insert(neighbor);
+                    q.push(neighbor);
+                }
+            }
+        }
+        cout << endl;
+    }
 };
 
 int main()
@@ -151,6 +182,9 @@ int main()
     // Perform DFS
     g.dfsRecursive(0);
     g.dfsIterative(0);
+
+    // Perform BFS
+    g.bfs(0);
     system("pause");
     return 0;
 }
