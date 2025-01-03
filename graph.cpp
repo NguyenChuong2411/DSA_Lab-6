@@ -5,6 +5,8 @@
 #include <set>
 #include <queue>
 #include <climits>
+#include <map>
+#include <algorithm>
 #include <functional>
 using namespace std;
 
@@ -231,6 +233,58 @@ public:
             cout << bridge.first << " - " << bridge.second << endl;
         }
     }
+
+    // Louvain Method for community detection
+    void louvainCommunityDetection()
+    {
+        vector<int> community(numVertices);
+        for (int i = 0; i < numVertices; ++i)
+        {
+            community[i] = i;
+        }
+
+        bool improvement = true;
+        while (improvement)
+        {
+            improvement = false;
+            for (int i = 0; i < numVertices; ++i)
+            {
+                map<int, int> neighborCommunities;
+                for (const auto &neighbor : adjList[i])
+                {
+                    int comm = community[neighbor.first];
+                    neighborCommunities[comm] += neighbor.second;
+                }
+
+                int maxCommunity = community[i];
+                int maxWeight = 0;
+                for (const auto &pair : neighborCommunities)
+                {
+                    int comm = pair.first;
+                    int weight = pair.second;
+                    {
+                        if (weight > maxWeight)
+                        {
+                            maxWeight = weight;
+                            maxCommunity = comm;
+                        }
+                    }
+
+                    if (maxCommunity != community[i])
+                    {
+                        community[i] = maxCommunity;
+                        improvement = true;
+                    }
+                }
+            }
+
+            cout << "Communities detected:\n";
+            for (int i = 0; i < numVertices; ++i)
+            {
+                cout << "Vertex " << i << " -> Community " << community[i] << endl;
+            }
+        }
+    }
 };
 
 int main()
@@ -263,6 +317,9 @@ int main()
 
     // Find bridges
     g.findBridges();
+
+    // Perform Louvain community detection
+    g.louvainCommunityDetection();
     system("pause");
     return 0;
 }
