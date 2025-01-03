@@ -8,6 +8,7 @@
 #include <map>
 #include <algorithm>
 #include <iomanip>
+#include <cmath>
 using namespace std;
 
 class Graph
@@ -48,6 +49,67 @@ public:
                 cout << "(" << neighbor.first << ", " << neighbor.second << ") ";
             }
             cout << endl;
+        }
+    }
+
+    // A* algorithm for route planning
+    void aStar(int start, int goal, const vector<int> &heuristic)
+    {
+        vector<int> distances(numVertices, INT_MAX);
+        distances[start] = 0;
+
+        priority_queue<pair<int, int>, vector<pair<int, int>>, greater<>> pq;
+        pq.push({heuristic[start], start});
+
+        vector<int> parents(numVertices, -1);
+
+        while (!pq.empty())
+        {
+            int currentNode = pq.top().second;
+            pq.pop();
+
+            if (currentNode == goal)
+            {
+                break;
+            }
+
+            for (const auto &neighbor : adjList[currentNode])
+            {
+                int nextNode = neighbor.first;
+                int edgeWeight = neighbor.second;
+                int newCost = distances[currentNode] + edgeWeight;
+
+                if (newCost < distances[nextNode])
+                {
+                    distances[nextNode] = newCost;
+                    parents[nextNode] = currentNode;
+                    pq.push({newCost + heuristic[nextNode], nextNode});
+                }
+            }
+        }
+
+        // Print the path and distance
+        if (distances[goal] == INT_MAX)
+        {
+            cout << "No path found from " << start << " to " << goal << ".\n";
+        }
+        else
+        {
+            cout << "Shortest path from " << start << " to " << goal << " is: ";
+            vector<int> path;
+            for (int at = goal; at != -1; at = parents[at])
+            {
+                path.push_back(at);
+            }
+            reverse(path.begin(), path.end());
+
+            for (size_t i = 0; i < path.size(); ++i)
+            {
+                if (i > 0)
+                    cout << " -> ";
+                cout << path[i];
+            }
+            cout << "\nTotal cost: " << distances[goal] << endl;
         }
     }
 
@@ -160,6 +222,10 @@ int main()
 
     // Print adjacency list
     g.printAdjList();
+
+    // Perform A* algorithm for route planning
+    vector<int> heuristic = {7, 6, 2, 0}; // Example heuristic values
+    g.aStar(0, 3, heuristic);
 
     // Perform Dijkstra's algorithm
     g.dijkstra(0);
