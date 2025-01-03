@@ -129,6 +129,55 @@ public:
             }
         }
     }
+
+    // Find all connected components using DFS
+    void findConnectedComponents()
+    {
+        set<int> visited;
+        vector<vector<int>> components;
+
+        for (int i = 0; i < numVertices; ++i)
+        {
+            if (visited.find(i) == visited.end())
+            {
+                vector<int> component;
+                stack<int> s;
+                s.push(i);
+
+                while (!s.empty())
+                {
+                    int v = s.top();
+                    s.pop();
+
+                    if (visited.find(v) == visited.end())
+                    {
+                        visited.insert(v);
+                        component.push_back(v);
+
+                        for (const auto &neighbor : adjList[v])
+                        {
+                            if (visited.find(neighbor.first) == visited.end())
+                            {
+                                s.push(neighbor.first);
+                            }
+                        }
+                    }
+                }
+
+                components.push_back(component);
+            }
+        }
+
+        cout << "Connected Components:\n";
+        for (const auto &component : components)
+        {
+            for (int vertex : component)
+            {
+                cout << vertex << " ";
+            }
+            cout << endl;
+        }
+    }
 };
 
 int main()
@@ -139,11 +188,13 @@ int main()
     g.addVertex();
     g.addVertex();
     g.addVertex();
+    g.addVertex();
+    g.addVertex();
 
     // Add edges with weights
     g.addEdge(0, 1, 4);
     g.addEdge(1, 2, 1);
-    g.addEdge(0, 2, 7);
+    g.addEdge(3, 4, 3);
 
     // Print adjacency list and matrix
     g.printAdjList();
@@ -151,6 +202,9 @@ int main()
 
     // Perform Dijkstra's algorithm
     g.dijkstra(0);
+
+    // Find connected components
+    g.findConnectedComponents();
     system("pause");
     return 0;
 }
