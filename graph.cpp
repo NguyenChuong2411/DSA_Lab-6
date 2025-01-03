@@ -13,7 +13,7 @@ using namespace std;
 class Graph
 {
 private:
-    unordered_map<int, vector<int>> adjList; // Adjacency List
+    unordered_map<int, vector<pair<int, int>>> adjList; // Adjacency List with weights
     int numVertices;
 
 public:
@@ -25,15 +25,15 @@ public:
         numVertices++;
     }
 
-    // Add a directed edge
-    void addEdge(int u, int v)
+    // Add a directed edge with weight
+    void addEdge(int u, int v, int weight)
     {
         if (u >= numVertices || v >= numVertices)
         {
             cout << "Invalid edge! Vertex does not exist.\n";
             return;
         }
-        adjList[u].push_back(v);
+        adjList[u].push_back({v, weight});
     }
 
     // Print adjacency list
@@ -45,9 +45,56 @@ public:
             cout << pair.first << ": ";
             for (const auto &neighbor : pair.second)
             {
-                cout << neighbor << " ";
+                cout << "(" << neighbor.first << ", " << neighbor.second << ") ";
             }
             cout << endl;
+        }
+    }
+
+    // Dijkstra's algorithm using priority queue
+    void dijkstra(int start)
+    {
+        vector<int> distances(numVertices, INT_MAX);
+        distances[start] = 0;
+
+        priority_queue<pair<int, int>, vector<pair<int, int>>, greater<>> pq;
+        pq.push({0, start});
+
+        while (!pq.empty())
+        {
+            int currentDist = pq.top().first;
+            int currentNode = pq.top().second;
+            pq.pop();
+
+            if (currentDist > distances[currentNode])
+            {
+                continue;
+            }
+
+            for (const auto &neighbor : adjList[currentNode])
+            {
+                int nextNode = neighbor.first;
+                int edgeWeight = neighbor.second;
+
+                if (distances[currentNode] + edgeWeight < distances[nextNode])
+                {
+                    distances[nextNode] = distances[currentNode] + edgeWeight;
+                    pq.push({distances[nextNode], nextNode});
+                }
+            }
+        }
+
+        cout << "Shortest distances from vertex " << start << ":\n";
+        for (int i = 0; i < numVertices; ++i)
+        {
+            if (distances[i] == INT_MAX)
+            {
+                cout << i << ": INF\n";
+            }
+            else
+            {
+                cout << i << ": " << distances[i] << "\n";
+            }
         }
     }
 
@@ -67,9 +114,9 @@ public:
                 if (outDegree > 0)
                 {
                     double distribute = rank[u] * dampingFactor / outDegree;
-                    for (int v : adjList[u])
+                    for (const auto &neighbor : adjList[u])
                     {
-                        newRank[v] += distribute;
+                        newRank[neighbor.first] += distribute;
                     }
                 }
                 else
@@ -104,16 +151,18 @@ int main()
     g.addVertex();
     g.addVertex();
 
-    // Add edges
-    g.addEdge(0, 1);
-    g.addEdge(0, 2);
-    g.addEdge(1, 2);
-    g.addEdge(2, 0);
-    g.addEdge(2, 3);
-    g.addEdge(3, 3);
+    // Add edges with weights
+    g.addEdge(0, 1, 4);
+    g.addEdge(0, 2, 1);
+    g.addEdge(1, 2, 2);
+    g.addEdge(1, 3, 5);
+    g.addEdge(2, 3, 8);
 
     // Print adjacency list
     g.printAdjList();
+
+    // Perform Dijkstra's algorithm
+    g.dijkstra(0);
 
     // Perform PageRank
     g.pageRank();
