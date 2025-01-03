@@ -7,14 +7,13 @@
 #include <climits>
 #include <map>
 #include <algorithm>
-#include <functional>
+#include <iomanip>
 using namespace std;
 
 class Graph
 {
 private:
-    unordered_map<int, vector<pair<int, int>>> adjList; // Adjacency List with weights
-    vector<vector<int>> adjMatrix;                      // Adjacency Matrix
+    unordered_map<int, vector<int>> adjList; // Adjacency List
     int numVertices;
 
 public:
@@ -24,35 +23,17 @@ public:
     void addVertex()
     {
         numVertices++;
-
-        // Add a new row and column in the adjacency matrix
-        for (auto &row : adjMatrix)
-        {
-            row.push_back(INT_MAX);
-        }
-        adjMatrix.push_back(vector<int>(numVertices, INT_MAX));
-        for (int i = 0; i < numVertices; ++i)
-        {
-            adjMatrix[i][i] = 0; // Distance to itself is zero
-        }
     }
 
-    // Add an edge with weight
-    void addEdge(int u, int v, int weight)
+    // Add a directed edge
+    void addEdge(int u, int v)
     {
         if (u >= numVertices || v >= numVertices)
         {
             cout << "Invalid edge! Vertex does not exist.\n";
             return;
         }
-
-        // Update adjacency list
-        adjList[u].push_back({v, weight});
-        adjList[v].push_back({u, weight}); // Assuming undirected graph
-
-        // Update adjacency matrix
-        adjMatrix[u][v] = weight;
-        adjMatrix[v][u] = weight; // Assuming undirected graph
+        adjList[u].push_back(v);
     }
 
     // Print adjacency list
@@ -64,225 +45,51 @@ public:
             cout << pair.first << ": ";
             for (const auto &neighbor : pair.second)
             {
-                cout << "(" << neighbor.first << ", " << neighbor.second << ") ";
+                cout << neighbor << " ";
             }
             cout << endl;
         }
     }
 
-    // Print adjacency matrix
-    void printAdjMatrix()
+    // PageRank algorithm
+    void pageRank(double dampingFactor = 0.85, int iterations = 100)
     {
-        cout << "Adjacency Matrix:\n";
-        for (const auto &row : adjMatrix)
+        vector<double> rank(numVertices, 1.0 / numVertices);
+        vector<double> newRank(numVertices, 0.0);
+
+        for (int iter = 0; iter < iterations; ++iter)
         {
-            for (const auto &val : row)
+            fill(newRank.begin(), newRank.end(), (1.0 - dampingFactor) / numVertices);
+
+            for (int u = 0; u < numVertices; ++u)
             {
-                if (val == INT_MAX)
+                int outDegree = adjList[u].size();
+                if (outDegree > 0)
                 {
-                    cout << "INF ";
-                }
-                else
-                {
-                    cout << val << " ";
-                }
-            }
-            cout << endl;
-        }
-    }
-
-    // Perform Dijkstra's algorithm
-    void dijkstra(int start)
-    {
-        vector<int> distances(numVertices, INT_MAX);
-        set<pair<int, int>> minHeap;
-
-        distances[start] = 0;
-        minHeap.insert({0, start});
-
-        while (!minHeap.empty())
-        {
-            int u = minHeap.begin()->second;
-            minHeap.erase(minHeap.begin());
-
-            for (const auto &neighbor : adjList[u])
-            {
-                int v = neighbor.first;
-                int weight = neighbor.second;
-
-                if (distances[u] + weight < distances[v])
-                {
-                    minHeap.erase({distances[v], v});
-                    distances[v] = distances[u] + weight;
-                    minHeap.insert({distances[v], v});
-                }
-            }
-        }
-
-        cout << "Shortest distances from vertex " << start << ":\n";
-        for (int i = 0; i < numVertices; ++i)
-        {
-            if (distances[i] == INT_MAX)
-            {
-                cout << i << ": INF\n";
-            }
-            else
-            {
-                cout << i << ": " << distances[i] << "\n";
-            }
-        }
-    }
-
-    // Find all connected components using DFS
-    void findConnectedComponents()
-    {
-        set<int> visited;
-        vector<vector<int>> components;
-
-        for (int i = 0; i < numVertices; ++i)
-        {
-            if (visited.find(i) == visited.end())
-            {
-                vector<int> component;
-                stack<int> s;
-                s.push(i);
-
-                while (!s.empty())
-                {
-                    int v = s.top();
-                    s.pop();
-
-                    if (visited.find(v) == visited.end())
+                    double distribute = rank[u] * dampingFactor / outDegree;
+                    for (int v : adjList[u])
                     {
-                        visited.insert(v);
-                        component.push_back(v);
-
-                        for (const auto &neighbor : adjList[v])
-                        {
-                            if (visited.find(neighbor.first) == visited.end())
-                            {
-                                s.push(neighbor.first);
-                            }
-                        }
-                    }
-                }
-
-                components.push_back(component);
-            }
-        }
-
-        cout << "Connected Components:\n";
-        for (const auto &component : components)
-        {
-            for (int vertex : component)
-            {
-                cout << vertex << " ";
-            }
-            cout << endl;
-        }
-    }
-
-    // Find all bridges in the graph
-    void findBridges()
-    {
-        vector<int> discovery(numVertices, -1);
-        vector<int> low(numVertices, -1);
-        vector<bool> visited(numVertices, false);
-        int timer = 0;
-        vector<pair<int, int>> bridges;
-
-        function<void(int, int)> dfs = [&](int u, int parent)
-        {
-            visited[u] = true;
-            discovery[u] = low[u] = timer++;
-
-            for (const auto &neighbor : adjList[u])
-            {
-                int v = neighbor.first;
-                if (v == parent)
-                    continue;
-
-                if (!visited[v])
-                {
-                    dfs(v, u);
-                    low[u] = min(low[u], low[v]);
-
-                    if (low[v] > discovery[u])
-                    {
-                        bridges.emplace_back(u, v);
+                        newRank[v] += distribute;
                     }
                 }
                 else
                 {
-                    low[u] = min(low[u], discovery[v]);
-                }
-            }
-        };
-
-        for (int i = 0; i < numVertices; ++i)
-        {
-            if (!visited[i])
-            {
-                dfs(i, -1);
-            }
-        }
-
-        cout << "Bridges in the graph:\n";
-        for (const auto &bridge : bridges)
-        {
-            cout << bridge.first << " - " << bridge.second << endl;
-        }
-    }
-
-    // Louvain Method for community detection
-    void louvainCommunityDetection()
-    {
-        vector<int> community(numVertices);
-        for (int i = 0; i < numVertices; ++i)
-        {
-            community[i] = i;
-        }
-
-        bool improvement = true;
-        while (improvement)
-        {
-            improvement = false;
-            for (int i = 0; i < numVertices; ++i)
-            {
-                map<int, int> neighborCommunities;
-                for (const auto &neighbor : adjList[i])
-                {
-                    int comm = community[neighbor.first];
-                    neighborCommunities[comm] += neighbor.second;
-                }
-
-                int maxCommunity = community[i];
-                int maxWeight = 0;
-                for (const auto &pair : neighborCommunities)
-                {
-                    int comm = pair.first;
-                    int weight = pair.second;
+                    double distribute = rank[u] * dampingFactor / numVertices;
+                    for (int v = 0; v < numVertices; ++v)
                     {
-                        if (weight > maxWeight)
-                        {
-                            maxWeight = weight;
-                            maxCommunity = comm;
-                        }
-                    }
-
-                    if (maxCommunity != community[i])
-                    {
-                        community[i] = maxCommunity;
-                        improvement = true;
+                        newRank[v] += distribute;
                     }
                 }
             }
 
-            cout << "Communities detected:\n";
-            for (int i = 0; i < numVertices; ++i)
-            {
-                cout << "Vertex " << i << " -> Community " << community[i] << endl;
-            }
+            rank = newRank;
+        }
+
+        cout << fixed << setprecision(6);
+        cout << "PageRank Values:\n";
+        for (int i = 0; i < numVertices; ++i)
+        {
+            cout << "Vertex " << i << ": " << rank[i] << endl;
         }
     }
 };
@@ -296,30 +103,20 @@ int main()
     g.addVertex();
     g.addVertex();
     g.addVertex();
-    g.addVertex();
 
-    // Add edges with weights
-    g.addEdge(0, 1, 4);
-    g.addEdge(1, 2, 1);
-    g.addEdge(2, 3, 2);
-    g.addEdge(3, 4, 3);
-    g.addEdge(1, 4, 5);
+    // Add edges
+    g.addEdge(0, 1);
+    g.addEdge(0, 2);
+    g.addEdge(1, 2);
+    g.addEdge(2, 0);
+    g.addEdge(2, 3);
+    g.addEdge(3, 3);
 
-    // Print adjacency list and matrix
+    // Print adjacency list
     g.printAdjList();
-    g.printAdjMatrix();
 
-    // Perform Dijkstra's algorithm
-    g.dijkstra(0);
-
-    // Find connected components
-    g.findConnectedComponents();
-
-    // Find bridges
-    g.findBridges();
-
-    // Perform Louvain community detection
-    g.louvainCommunityDetection();
+    // Perform PageRank
+    g.pageRank();
     system("pause");
     return 0;
 }
