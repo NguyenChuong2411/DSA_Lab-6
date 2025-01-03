@@ -5,6 +5,7 @@
 #include <set>
 #include <queue>
 #include <climits>
+#include <functional>
 using namespace std;
 
 class Graph
@@ -178,6 +179,58 @@ public:
             cout << endl;
         }
     }
+
+    // Find all bridges in the graph
+    void findBridges()
+    {
+        vector<int> discovery(numVertices, -1);
+        vector<int> low(numVertices, -1);
+        vector<bool> visited(numVertices, false);
+        int timer = 0;
+        vector<pair<int, int>> bridges;
+
+        function<void(int, int)> dfs = [&](int u, int parent)
+        {
+            visited[u] = true;
+            discovery[u] = low[u] = timer++;
+
+            for (const auto &neighbor : adjList[u])
+            {
+                int v = neighbor.first;
+                if (v == parent)
+                    continue;
+
+                if (!visited[v])
+                {
+                    dfs(v, u);
+                    low[u] = min(low[u], low[v]);
+
+                    if (low[v] > discovery[u])
+                    {
+                        bridges.emplace_back(u, v);
+                    }
+                }
+                else
+                {
+                    low[u] = min(low[u], discovery[v]);
+                }
+            }
+        };
+
+        for (int i = 0; i < numVertices; ++i)
+        {
+            if (!visited[i])
+            {
+                dfs(i, -1);
+            }
+        }
+
+        cout << "Bridges in the graph:\n";
+        for (const auto &bridge : bridges)
+        {
+            cout << bridge.first << " - " << bridge.second << endl;
+        }
+    }
 };
 
 int main()
@@ -194,7 +247,9 @@ int main()
     // Add edges with weights
     g.addEdge(0, 1, 4);
     g.addEdge(1, 2, 1);
+    g.addEdge(2, 3, 2);
     g.addEdge(3, 4, 3);
+    g.addEdge(1, 4, 5);
 
     // Print adjacency list and matrix
     g.printAdjList();
@@ -205,6 +260,9 @@ int main()
 
     // Find connected components
     g.findConnectedComponents();
+
+    // Find bridges
+    g.findBridges();
     system("pause");
     return 0;
 }
