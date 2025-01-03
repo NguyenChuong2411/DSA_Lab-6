@@ -1,7 +1,8 @@
-
 #include <iostream>
 #include <vector>
 #include <unordered_map>
+#include <stack>
+#include <set>
 using namespace std;
 
 class Graph
@@ -73,6 +74,60 @@ public:
             cout << endl;
         }
     }
+
+    // Recursive DFS helper
+    void dfsRecursiveHelper(int v, set<int> &visited)
+    {
+        cout << v << " ";
+        visited.insert(v);
+
+        for (int neighbor : adjList[v])
+        {
+            if (visited.find(neighbor) == visited.end())
+            {
+                dfsRecursiveHelper(neighbor, visited);
+            }
+        }
+    }
+
+    // Perform DFS (Recursive)
+    void dfsRecursive(int start)
+    {
+        set<int> visited;
+        cout << "DFS (Recursive): ";
+        dfsRecursiveHelper(start, visited);
+        cout << endl;
+    }
+
+    // Perform DFS (Iterative)
+    void dfsIterative(int start)
+    {
+        set<int> visited;
+        stack<int> s;
+        s.push(start);
+
+        cout << "DFS (Iterative): ";
+        while (!s.empty())
+        {
+            int v = s.top();
+            s.pop();
+
+            if (visited.find(v) == visited.end())
+            {
+                cout << v << " ";
+                visited.insert(v);
+            }
+
+            for (auto it = adjList[v].rbegin(); it != adjList[v].rend(); ++it)
+            {
+                if (visited.find(*it) == visited.end())
+                {
+                    s.push(*it);
+                }
+            }
+        }
+        cout << endl;
+    }
 };
 
 int main()
@@ -93,5 +148,9 @@ int main()
     g.printAdjList();
     g.printAdjMatrix();
 
+    // Perform DFS
+    g.dfsRecursive(0);
+    g.dfsIterative(0);
+    system("pause");
     return 0;
 }
